@@ -101,7 +101,7 @@ rust_source <- function(file, code = NULL,
                         generate_module_macro = TRUE,
                         cache_build = TRUE,
                         quiet = FALSE,
-                        use_rtools = TRUE) {
+                        use_rtools = "mingw") {
   profile <- match.arg(profile)
   if (is.null(extendr_deps)) {
     ui_throw(
@@ -223,12 +223,12 @@ rust_function <- function(code, env = parent.frame(), ...) {
 #' Sets up environment and invokes Rust's cargo.
 #'
 #' Configures the environment and makes a call to [system2()],
-#'   assuming `cargo` is avaialble on the `PATH`.
+#'   assuming `cargo` is available on the `PATH`.
 #' Function parameters control the formatting of `cargo` arguments.
 #'
 #' @param toolchain \[string\] Rust toolchain used for compilation.
 #' @param specific_target \[string or `NULL`\] Build target (`NULL` if the same as `toolchain`).
-#' @param dir \[string\] Path to a folder containing`Cargo.toml` file.
+#' @param dir \[string\] Path to a folder containing `Cargo.toml` file.
 #' @param profile \[string\] Indicates wether to build dev or release versions.
 #'   If `"release"`, emits `--release` argument to `cargo`.
 #'   Otherwise, does nothing.
@@ -238,10 +238,11 @@ rust_function <- function(code, env = parent.frame(), ...) {
 #'   for the duration of compilation. Has no effect on systems other than Windows.
 #' @noRd
 invoke_cargo <- function(toolchain, specific_target, dir, profile,
-                         stdout, stderr, use_rtools) {
+                         stdout, stderr, use_rtools = c("mingw", "ucrt", "none")) {
+  use_rtools <- match.arg(use_rtools)
   # Append rtools path to the end of PATH on Windows
   if (
-    isTRUE(use_rtools) &&
+    use_rtools == "none" &&
       .Platform$OS.type == "windows"
   ) {
     if (
@@ -265,15 +266,21 @@ invoke_cargo <- function(toolchain, specific_target, dir, profile,
       mustWork = TRUE
     )
 
+    arch <- ifelse(R.version$arch == "i386", "32", "64")
+    if (use_rtools == "ucrt" && arch == "32") {
+      ui_throw(
+        "Combination of {use_rtools} and {arch} is not supported. Aborting.")
+    }
+
     rtools_bin_path <-
       normalizePath(
         file.path(
           rtools_home,
-          paste0("mingw", ifelse(R.version$arch == "i386", "32", "64")),
+          paste0(use_rtools, arch),
           "bin"
         )
       )
-    # Appends path to rtools\mingw{arch}\bin using a correct arch
+    # Appends path to rtools\{use_rtols}{arch}\bin using a correct arch
     withr::local_path(rtools_bin_path, action = "suffix")
     # If RTOOLS40_HOME is properly set, this will have no real effect
     withr::local_envvar(RTOOLS40_HOME = rtools_home)
