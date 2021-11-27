@@ -34,7 +34,8 @@
     Code
       cat_file("src", "Makevars")
     Output
-      LIBDIR = ./rust/target/release
+      TARGET_DIR = ./rust/target
+      LIBDIR = $(TARGET_DIR)/release
       STATLIB = $(LIBDIR)/libtestpkg.a
       PKG_LIBS = -L$(LIBDIR) -ltestpkg
       
@@ -43,7 +44,7 @@
       $(SHLIB): $(STATLIB)
       
       $(STATLIB):
-      	cargo build --lib --release --manifest-path=./rust/Cargo.toml
+      	cargo build --lib --release --manifest-path=./rust/Cargo.toml --target-dir $(TARGET_DIR)
       
       C_clean:
       	rm -Rf $(SHLIB) $(STATLIB) $(OBJECTS)
@@ -57,7 +58,9 @@
       cat_file("src", "Makevars.win")
     Output
       TARGET = $(subst 64,x86_64,$(subst 32,i686,$(WIN)))-pc-windows-gnu
-      LIBDIR = ./rust/target/$(TARGET)/release
+      TOOLCHAIN = stable-msvc
+      TARGET_DIR = ./rust/target
+      LIBDIR = $(TARGET_DIR)/$(TARGET)/release
       STATLIB = $(LIBDIR)/libtestpkg.a
       PKG_LIBS = -L$(LIBDIR) -ltestpkg -lws2_32 -ladvapi32 -luserenv
       
@@ -66,7 +69,7 @@
       $(SHLIB): $(STATLIB)
       
       $(STATLIB):
-      	cargo build --target=$(TARGET) --lib --release --manifest-path=./rust/Cargo.toml
+      	cargo +$(TOOLCHAIN) build --target=$(TARGET) --lib --release --manifest-path=./rust/Cargo.toml --target-dir $(TARGET_DIR)
       
       C_clean:
       	rm -Rf $(SHLIB) $(STATLIB) $(OBJECTS)
