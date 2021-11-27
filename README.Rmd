@@ -24,6 +24,7 @@ status](https://github.com/extendr/rextendr/workflows/R-CMD-check/badge.svg)](ht
 <!-- badges: end -->
 
 ## Installation
+xx
 
 To install the package, run:
 ```r
